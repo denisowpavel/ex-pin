@@ -12,7 +12,7 @@ let app = express();
 let redisClient = redis.createClient();
 const userTTL = 100; //sec
 const apiPrefix = '/api/'
-
+const okStr = '[\x1b[32m Ok \x1b[0m]'
 router.use(express.static(__dirname + '/../public'));
 
 router.get(apiPrefix+'info', (req, res) => {
@@ -83,13 +83,17 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
 redisClient.on('error', (err) => {
-    console.error('Redis Error: ' + err);
+    console.error('\x1b[31m >> Redis Error: \x1b[0m', err);
+});
+
+redisClient.on('connect', (err) => {
+    console.log(okStr, 'Redis connected');
 });
 
 app.listen(3000, function () {
-    console.log('\n-----------------------');
-    console.log(packageFile.name+' '+packageFile.version+' is ready\n');
-    console.log(' http://localhost:3000/ \n\n');
+    console.log('\n\x1b[43m-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\x1b[0m');
+    console.log(okStr, 'App starded');
+    console.log(okStr, packageFile.name+' '+packageFile.version+' is ready HOST: \x1b[36mhttp://localhost:3000/\x1b[0m ');
 });
 
 // client.quit();
