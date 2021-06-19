@@ -9,26 +9,30 @@ import packageFile from '../package.json';
 
 let router = express.Router();
 let app = express();
+app.use(cookieParser());
+app.use(router);
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 let redisClient = redis.createClient();
 const userTTL = 100; //sec
 const apiPrefix = '/api/'
 const okStr = '[\x1b[32m Ok \x1b[0m]'
 router.use(express.static(__dirname + '/../public'));
 
-router.get(apiPrefix+'info', (req, res) => {
+app.get(apiPrefix+'info', (req, res) => {
     res.json({app: packageFile.name, version: packageFile.version})
 })
 
-router.get(apiPrefix+'auth/me', userData, (req: any, res) => {
+app.get(apiPrefix+'auth/me', userData, (req: any, res) => {
     res.json({user: req.user});
 })
 
-router.post(apiPrefix+'auth/login', (req, res) => {
-    if(!req.query.tfa_code){
+app.post(apiPrefix+'auth/login', (req, res) => {
+    if(!req.body.tfa_code){
         res.status(422);
         res.json({error: {id: -1,  comment: 'no field tfa_code'}});
     }
-    if(req.query.tfa_code === '0000'){
+    if(req.body.tfa_code === '0000'){
         const rand=()=>Math.random().toString(36).substr(2);
         const token = (rand()+rand()+rand()+rand()).substr(0,30);
         res.cookie('access-token', token)
@@ -48,7 +52,7 @@ router.post(apiPrefix+'auth/login', (req, res) => {
     }
 })
 
-router.get(apiPrefix+'auth/logout', (req, res) => {
+app.get(apiPrefix+'auth/logout', (req, res) => {
     const token = req.cookies['access-token'];
     redisClient.del('token-'+token, (err, replies) => {
         if(!err){
@@ -77,10 +81,6 @@ function userData (req: any, res: any, next: any) {
     });
 }
 
-app.use(cookieParser());
-app.use(router);
-app.use(bodyParser.urlencoded({ extended: false }))
-app.use(bodyParser.json())
 
 redisClient.on('error', (err) => {
     console.error('\x1b[31m >> Redis Error: \x1b[0m', err);
@@ -90,10 +90,8 @@ redisClient.on('connect', (err) => {
     console.log(okStr, 'Redis connected');
 });
 
-app.listen(3000, function () {
+app.listen(3000, () => {
     console.log('\n\x1b[43m-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\x1b[0m');
     console.log(okStr, 'App starded');
     console.log(okStr, packageFile.name+' '+packageFile.version+' is ready HOST: \x1b[36mhttp://localhost:3000/\x1b[0m ');
 });
-
-// client.quit();
